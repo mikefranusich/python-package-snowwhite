@@ -90,7 +90,9 @@ for  x in range (np.size(src)):
     vi = np.random.random()
     src.itemset(x,vr + vi * 1j)
 
-sharedlib = ctypes.CDLL('libtestfuncs' + SW_SHLIB_EXT)
+libsdir = os.getcwd()
+libpath = os.path.join(libsdir, 'libtestfuncs' + SW_SHLIB_EXT)
+sharedlib = ctypes.CDLL(libpath)
 print('Test library:', sharedlib)
 print('Calling external function\n');
 
