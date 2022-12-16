@@ -8,8 +8,6 @@ if (len(sys.argv) < 2) or (sys.argv[1] == "?"):
     script = os.path.basename(__file__)
     print(script + " sz [ F|I [ d|s ]]")
     print("  sz is N or N1,N2,N3")
-    print("  F  = Forward, I = Inverse")
-    print("  d  = double, s = single precision")
     sys.exit()
 
 # direction, SW_FORWARD or SW_INVERSE
@@ -26,18 +24,8 @@ n3 = (lambda:n2, lambda:int(nnn[2]))[len(nnn) > 2]()
 
 dims = [n1,n2,n3]
 dimsTuple = tuple(dims)
-    
-if len(sys.argv) > 2:
-    if sys.argv[2] == "I":
-        k = SW_INVERSE
-        
-if len(sys.argv) > 3:
-    if sys.argv[3] == "s":
-        c_type = 'float'
-        cxtype = np.csingle
 
 problem = MddftProblem(dims, k)
-
 
 opts = { SW_OPT_REALCTYPE : c_type, SW_OPT_PLATFORM : SW_CPU }
 try:
@@ -94,13 +82,13 @@ libsdir = os.getcwd()
 libpath = os.path.join(libsdir, 'libtestfuncs' + SW_SHLIB_EXT)
 sharedlib = ctypes.CDLL(libpath)
 print('Test library:', sharedlib)
-print('Calling external function\n');
+print('Calling external function callfuncsbyname()\n');
 
 #void callfuncsbyname(
 #    int bytes_in,
 #    int bytes_out,
-#    void* ptr_in,
-#    void* ptr_out,
+#    double* ptr_in,
+#    double* ptr_out,
 #    char* library_cpu,
 #    char* library_cuda,
 #    char* library_hip,
@@ -122,7 +110,31 @@ callfuncsbyname(src.size * src.itemsize,
                 funcname_cuda.encode(),
                 funcname_hip.encode())
 
+print('\nCalling external function callfuncs()\n');
 
+#void callfuncs(
+#    int bytes_in,
+#    int bytes_out,
+#    double* ptr_in,
+#    double* ptr_out,
+#    func2dbls func_cpu,
+#    func2dbls func_cuda,
+#    func2dbls func_hip)
+
+callfuncs = getattr(sharedlib, "callfuncs")
+
+callfuncs(src.size * src.itemsize, 
+          dst.size * dst.itemsize, 
+          src.ctypes.data_as(ctypes.c_void_p),
+          dst.ctypes.data_as(ctypes.c_void_p),
+          funcptr_cpu,
+          funcptr_cuda,
+          funcptr_hip)
+
+dstP = solver_cpu.runDef(src)
+
+diff = np.max ( np.absolute ( dst - dstP ) )
+print ('Diff between NumPy/Spiral transforms = ' + str(diff) )
 
 
 
